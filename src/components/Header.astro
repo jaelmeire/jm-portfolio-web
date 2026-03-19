@@ -17,10 +17,10 @@ import logo from '../assets/logo/dark_theme/jm_web_developer.svg'; // Logo Princ
 		<!-- Navegación Desktop -->
 		<nav class="hidden md:block">
 			<ul class="flex items-center gap-8 text-sm text-gray-300">
-				<li><a href="#who-i-am" class="hover:text-white transition">Who I Am</a></li> <!-- Sección Who I Am -->
-				<li><a href="#experience" class="hover:text-white transition">Experience</a></li> <!-- Sección Experience -->
-				<li><a href="#portfolio" class="hover:text-white transition">Portfolio</a></li> <!-- Sección Portfolio -->
-				<li><a href="#testimonials" class="hover:text-white transition">Testimonials</a></li> <!-- Sección Testimonials -->
+				<li><a href="#who-i-am" data-nav="who-i-am" class="nav-link hover:text-white transition relative">Who I Am</a></li>
+				<li><a href="#experience" data-nav="experience" class="nav-link hover:text-white transition relative">Experience</a></li>
+				<li><a href="#portfolio" data-nav="portfolio" class="nav-link hover:text-white transition relative">Portfolio</a></li>
+				<li><a href="#jobs" data-nav="jobs" class="nav-link hover:text-white transition relative">Jobs</a></li>
 				<li>
 					<a
 						href="#contact"
@@ -78,10 +78,10 @@ import logo from '../assets/logo/dark_theme/jm_web_developer.svg'; // Logo Princ
 	>
 		<nav class="max-w-5xl mx-auto px-6 py-6">
 			<ul class="flex flex-col gap-5 text-sm text-gray-300">
-				<li><a href="#who-i-am" class="hover:text-white transition">Who I Am</a></li>
-				<li><a href="#experience" class="hover:text-white transition">Experience</a></li>
-				<li><a href="#portfolio" class="hover:text-white transition">Portfolio</a></li>
-				<li><a href="#testimonials" class="hover:text-white transition">Testimonials</a></li>
+				<li><a href="#who-i-am" data-nav="who-i-am" class="nav-link hover:text-white transition">Who I Am</a></li>
+				<li><a href="#experience" data-nav="experience" class="nav-link hover:text-white transition">Experience</a></li>
+				<li><a href="#portfolio" data-nav="portfolio" class="nav-link hover:text-white transition">Portfolio</a></li>
+				<li><a href="#jobs" data-nav="jobs" class="nav-link hover:text-white transition">Jobs</a></li>
 
 				<li class="pt-4">
 					<a
@@ -123,6 +123,50 @@ import logo from '../assets/logo/dark_theme/jm_web_developer.svg'; // Logo Princ
 				burger.classList.remove('opacity-0');
 				closeIcon.classList.add('opacity-0');
 			}
+		});
+	});
+</script>
+
+<style>
+	.nav-link::after {
+		content: '';
+		position: absolute;
+		bottom: -4px;
+		left: 0;
+		width: 0;
+		height: 1.5px;
+		background: white;
+		transition: width 200ms ease;
+	}
+	.nav-link.active {
+		color: white;
+	}
+	.nav-link.active::after {
+		width: 100%;
+	}
+</style>
+
+<script is:inline>
+	// Active nav link on scroll
+	document.addEventListener('DOMContentLoaded', () => {
+		const sections = ['who-i-am', 'experience', 'portfolio', 'jobs', 'contact'];
+
+		const observer = new IntersectionObserver(entries => {
+			entries.forEach(entry => {
+				if (!entry.isIntersecting) return;
+				const id = entry.target.id;
+				document.querySelectorAll('.nav-link').forEach(link => {
+					link.classList.toggle('active', link.getAttribute('data-nav') === id);
+				});
+			});
+		}, {
+			rootMargin: '-40% 0px -55% 0px',
+			threshold: 0
+		});
+
+		sections.forEach(id => {
+			const el = document.getElementById(id);
+			if (el) observer.observe(el);
 		});
 	});
 </script>

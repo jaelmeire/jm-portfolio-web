@@ -1,0 +1,28 @@
+---
+import { allProjectsData } from '../data/projectsData.js';
+import ProjectCard from '../components/portfolio/ProjectCard.astro';
+import ProjectLightbox from '../components/portfolio/ProjectLightbox.astro';
+
+const jobsProjects = allProjectsData.filter(p => p.section === 'jobs');
+---
+
+<section id="jobs" class="max-w-5xl mx-auto px-6 py-24" data-lightbox-scope="jobs-lightbox">
+  <div class="mb-10">
+    <p class="text-xs tracking-widest text-gray-500 text-center mb-4">JOBS</p>
+    <h2 class="text-3xl font-bold text-center mb-3">Featured Jobs</h2>
+    <p class="text-gray-400 text-center max-w-2xl mx-auto mb-16">
+      Real projects built for clients — from e-commerce stores to custom WordPress sites,
+      each one designed in Figma and developed for performance and usability.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6">
+    {jobsProjects.map(project => (
+      <ProjectCard {...project} />
+    ))}
+  </div>
+
+  <ProjectLightbox projects={jobsProjects} instanceId="jobs-lightbox" />
+</section>
+
+<script src="../scripts/lightbox.ts"></script>

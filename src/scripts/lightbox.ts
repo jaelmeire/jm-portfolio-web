@@ -1,252 +1,191 @@
-document.addEventListener('DOMContentLoaded', () => { // Inicializa el lightbox al cargar el DOM
-    const lightboxEl = document.getElementById('project-lightbox'); // Contenedor principal del lightbox
-    if (!(lightboxEl instanceof HTMLElement)) return; // Salida segura si no existe
+function initLightbox(instanceId: string) {
+  const lightboxEl = document.getElementById(instanceId);
+  if (!(lightboxEl instanceof HTMLElement)) return;
 
-    const lightbox = lightboxEl; // Alias del overlay para uso interno
-    const content = lightbox.querySelector('[data-lightbox-content]') as HTMLElement; // Panel central con escala y transición
-    const gallery = lightbox.querySelector('[data-lightbox-gallery]') as HTMLElement; // Columna de galería de imágenes
-    const info = lightbox.querySelector('[data-lightbox-info]') as HTMLElement; // Columna de texto y botones
-    const closeBtn = lightbox.querySelector('[data-close-lightbox]') as HTMLElement; // Botón de cerrar
+  const lightbox = lightboxEl;
+  const content = lightbox.querySelector('[data-lightbox-content]') as HTMLElement;
+  const gallery = lightbox.querySelector('[data-lightbox-gallery]') as HTMLElement;
+  const info = lightbox.querySelector('[data-lightbox-info]') as HTMLElement;
+  const closeBtn = lightbox.querySelector('[data-close-lightbox]') as HTMLElement;
+  const prevBtn = lightbox.querySelector('[data-lightbox-prev]');
+  const nextBtn = lightbox.querySelector('[data-lightbox-next]');
 
-    const prevBtn = lightbox.querySelector('[data-lightbox-prev]'); // Botón proyecto anterior
-    const nextBtn = lightbox.querySelector('[data-lightbox-next]'); // Botón proyecto siguiente
+  const projects = (window as any).__LIGHTBOX_DATA__?.[instanceId];
+  if (!Array.isArray(projects)) return;
 
-    const projects = (window as any).__PROJECTS__; // Dataset inyectado desde Astro con los proyectos
-    if (!Array.isArray(projects)) return; // Validación del formato esperado
+  let currentIndex = -1;
+  const preloaded = new Set<string>();
 
-    let currentIndex = -1; // Índice actual abierto en el lightbox
+  function preloadImages(sources: string[]) {
+    sources.forEach(src => {
+      if (preloaded.has(src)) return;
+      preloaded.add(src);
+      const img = new Image();
+      img.src = src;
+    });
+  }
 
-    // Preload helpers
+  function preloadAdjacentProjects(index: number) {
+    const prev = projects[index - 1];
+    const next = projects[index + 1];
+    if (prev?.gallery?.length) preloadImages(prev.gallery);
+    if (next?.gallery?.length) preloadImages(next.gallery);
+  }
 
-    const preloaded = new Set<string>(); // Cache simple para no pre-cargar la misma imagen dos veces
+  function animateContent(direction: 'next' | 'prev', onMidpoint: () => void) {
+    const offset = direction === 'next' ? -20 : 20;
 
-    function preloadImages(sources: string[]) { // Precarga un listado de URLs de imágenes
-        sources.forEach(src => {
-        if (preloaded.has(src)) return; // Evita repetir requests
-        preloaded.add(src); // Marca la imagen como precargada
+    gallery.style.transition = 'opacity 200ms ease, transform 200ms ease';
+    info.style.transition = 'opacity 200ms ease, transform 200ms ease';
+    gallery.style.opacity = '0';
+    info.style.opacity = '0';
+    gallery.style.transform = `translateX(${offset}px)`;
+    info.style.transform = `translateX(${offset}px)`;
 
-        const img = new Image(); // Crea un objeto imagen sin insertarlo al DOM
-        img.src = src; // Dispara la descarga en background
-        });
-    }
+    setTimeout(() => {
+      onMidpoint();
+      gallery.style.transition = 'none';
+      info.style.transition = 'none';
+      gallery.style.transform = `translateX(${-offset}px)`;
+      info.style.transform = `translateX(${-offset}px)`;
 
-    function preloadAdjacentProjects(index: number) { // Precarga galería del proyecto previo y siguiente
-        const prev = projects[index - 1]; // Proyecto anterior
-        const next = projects[index + 1]; // Proyecto siguiente
+      requestAnimationFrame(() => {
+        gallery.style.transition = 'opacity 200ms ease, transform 200ms ease';
+        info.style.transition = 'opacity 200ms ease, transform 200ms ease';
+        gallery.style.opacity = '1';
+        info.style.opacity = '1';
+        gallery.style.transform = 'translateX(0)';
+        info.style.transform = 'translateX(0)';
+      });
+    }, 200);
+  }
 
-        if (prev?.gallery?.length) { // Precarga si existe galería previa
-        preloadImages(prev.gallery);
-        }
+  function openLightboxByIndex(index: number, direction?: 'next' | 'prev') {
+    const project = projects[index];
+    if (!project) return;
 
-        if (next?.gallery?.length) { // Precarga si existe galería siguiente
-        preloadImages(next.gallery);
-        }
-    }
+    const updateContent = () => {
+      currentIndex = index;
+      gallery.scrollTop = 0;
+      info.scrollTop = 0;
 
-    // Core logic
-
-    function animateContent( // Maneja la animación al cambiar entre proyectos
-    direction: 'next' | 'prev', // Dirección de navegación para calcular el offset
-    onMidpoint: () => void // Callback que actualiza el contenido en el punto medio
-    ) {
-        const offset = direction === 'next' ? -20 : 20; // Offset horizontal para salida y entrada
-
-        // salida
-        gallery.style.transition = 'opacity 200ms ease, transform 200ms ease'; // Transición de la galería
-        info.style.transition = 'opacity 200ms ease, transform 200ms ease'; // Transición del panel info
-
-        gallery.style.opacity = '0'; // Fade out galería
-        info.style.opacity = '0'; // Fade out info
-
-        gallery.style.transform = `translateX(${offset}px)`; // Desplaza galería hacia la dirección
-        info.style.transform = `translateX(${offset}px)`; // Desplaza info hacia la dirección
-
-        setTimeout(() => { // Espera el fin de la salida antes de cambiar contenido
-            onMidpoint(); // Actualiza HTML con el nuevo proyecto
-
-            // entrada
-            gallery.style.transition = 'none'; // Reset sin animar para preparar el lado opuesto
-            info.style.transition = 'none'; // Reset sin animar para preparar el lado opuesto
-
-            gallery.style.transform = `translateX(${-offset}px)`; // Posición inicial de entrada
-            info.style.transform = `translateX(${-offset}px)`; // Posición inicial de entrada
-
-            requestAnimationFrame(() => { // Aplica entrada en el siguiente frame para evitar salto
-            gallery.style.transition = 'opacity 200ms ease, transform 200ms ease'; // Reactiva transición
-            info.style.transition = 'opacity 200ms ease, transform 200ms ease'; // Reactiva transición
-
-            gallery.style.opacity = '1'; // Fade in galería
-            info.style.opacity = '1'; // Fade in info
-
-            gallery.style.transform = 'translateX(0)'; // Vuelve al centro
-            info.style.transform = 'translateX(0)'; // Vuelve al centro
-            });
-        }, 200); // Debe coincidir con la duración de salida
-    }
-
-    function openLightboxByIndex(index: number, direction?: 'next' | 'prev') { // Abre o actualiza el lightbox por índice
-    const project = projects[index]; // Proyecto a renderizar
-    if (!project) return; // Validación del índice
-
-    const updateContent = () => { // Render del contenido del proyecto actual
-        currentIndex = index; // Marca el proyecto como activo
-
-        gallery.scrollTop = 0; // Reinicia scroll de la galería
-        info.scrollTop = 0; // Reinicia scroll del panel info
-
-        gallery.innerHTML = project.gallery // Render de imágenes de la galería
-        .map(
-            (src: string) =>
-            `<img src="${src}" class="w-full rounded-xl border border-white/5" />` // Imagen con estilo y borde
-        )
+      gallery.innerHTML = project.gallery
+        .map((src: string) => `<img src="${src}" class="w-full rounded-xl border border-white/5" />`)
         .join('');
 
-        info.innerHTML = ` // Render del bloque informativo del proyecto
-        <p class="text-xs tracking-widest text-gray-500 uppercase mb-4">
-            ${project.category} <!-- Categoría del proyecto -->
-        </p>
+      info.innerHTML = `
+        <p class="text-xs tracking-widest text-gray-500 uppercase mb-4">${project.category}</p>
+        <h3 class="text-2xl font-bold mb-4">${project.title}</h3>
+        ${project.longDescription
+          ? `<p class="text-gray-400 mb-6 leading-relaxed">${project.longDescription}</p>`
+          : ''}
+        ${project.tags?.length
+          ? `<ul class="flex flex-wrap gap-3 mb-8 text-sm">
+              ${project.tags.map((tag: any) => `
+                <li class="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 transition hover:scale-[1.03] px-4 py-2">
+                  <img src="${tag.icon}" class="w-4 h-4 opacity-80" />
+                  ${tag.label}
+                </li>`).join('')}
+            </ul>`
+          : ''}
+        <div class="flex items-center gap-3 flex-wrap">
+          ${project.liveUrl
+            ? `<a href="${project.liveUrl}" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                  bg-white/10 border border-white/15 text-sm text-gray-300
+                  hover:bg-white/20 hover:text-white transition">
+                View live <span class="text-xs opacity-70">↗</span>
+              </a>`
+            : ''}
+          ${project.githubUrl
+            ? `<a href="${project.githubUrl}" target="_blank" rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                  bg-white/10 border border-white/15 text-sm text-gray-300
+                  hover:bg-white/20 hover:text-white transition"
+                aria-label="Ver en GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4 opacity-80" fill="currentColor">
+                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                </svg>
+                GitHub
+              </a>`
+            : ''}
+        </div>
+      `;
 
-        <h3 class="text-2xl font-bold mb-4">${project.title}</h3> <!-- Título -->
-
-        ${
-            project.longDescription
-            ? `<p class="text-gray-400 mb-6 leading-relaxed">${project.longDescription}</p>` // Descripción larga opcional
-            : ''
-        }
-
-        ${
-            project.tags?.length
-            ? `<ul class="flex flex-wrap gap-3 mb-8 text-sm">
-                ${project.tags
-                    .map(
-                    (tag: any) => `
-                    <li class="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 hover:bg-white/10 transition hover:scale-[1.03] px-4 py-2">
-                        <img src="${tag.icon}" class="w-4 h-4 opacity-80" /> <!-- Icono del tag -->
-                        ${tag.label} <!-- Label del tag -->
-                    </li>`
-                    )
-                    .join('')}
-                </ul>` // Tags opcionales del proyecto
-            : ''
-        }
-
-        ${
-            project.liveUrl
-                ? `
-                <a
-                    href="${project.liveUrl}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="
-                    inline-flex items-center gap-2
-                    px-5 py-2.5
-                    rounded-full
-                    bg-white/10 border border-white/15
-                    text-sm text-gray-300
-                    hover:bg-white/20 hover:text-white
-                    transition
-                    "
-                >
-                    View live <!-- Link al sitio en vivo -->
-                    <span class="text-xs opacity-70">↗</span> <!-- Indicador externo -->
-                </a>
-                `
-                : ''
-        }
-        `;
-
-        preloadAdjacentProjects(index); // Precarga imágenes de proyectos vecinos
+      preloadAdjacentProjects(index);
     };
 
-    // primera apertura
-    if (currentIndex === -1 || !direction) { // Primera apertura sin animación de cambio
-        updateContent(); // Render inmediato
-        lightbox.classList.remove('opacity-0', 'pointer-events-none'); // Muestra el overlay
-        content.classList.remove('scale-95', 'opacity-0'); // Activa el panel central
-        return;
+    if (currentIndex === -1 || !direction) {
+      updateContent();
+      lightbox.classList.remove('opacity-0', 'pointer-events-none');
+      content.classList.remove('scale-95', 'opacity-0');
+      return;
     }
 
-    animateContent(direction, updateContent); // Cambio entre proyectos con animación
-    }
+    animateContent(direction, updateContent);
+  }
 
-    function closeLightbox() { // Cierra el lightbox
-        lightbox.classList.add('opacity-0', 'pointer-events-none'); // Oculta overlay y bloquea clicks
-        content.classList.add('scale-95', 'opacity-0'); // Anima el panel hacia fuera
-    }
+  function closeLightbox() {
+    lightbox.classList.add('opacity-0', 'pointer-events-none');
+    content.classList.add('scale-95', 'opacity-0');
+  }
 
-    function showNext() { // Navega al siguiente proyecto
-    const next = (currentIndex + 1) % projects.length; // Loop al inicio al llegar al final
-    openLightboxByIndex(next, 'next'); // Abre el siguiente con animación
-    }
+  function showNext() {
+    openLightboxByIndex((currentIndex + 1) % projects.length, 'next');
+  }
 
-    function showPrev() { // Navega al proyecto anterior
-    const prev = (currentIndex - 1 + projects.length) % projects.length; // Loop al final al ir antes del inicio
-    openLightboxByIndex(prev, 'prev'); // Abre el anterior con animación
-    }
+  function showPrev() {
+    openLightboxByIndex((currentIndex - 1 + projects.length) % projects.length, 'prev');
+  }
 
-    // Events
+  // Events — scoped al lightbox de esta instancia
+  document.addEventListener('click', e => {
+    const target = e.target as HTMLElement;
+    const trigger = target.closest('[data-open-project]');
+    if (!trigger) return;
 
-    document.addEventListener('click', e => { // Delegación para abrir proyectos desde cards o botones
-        const target = e.target as HTMLElement; // Target del click
-        const trigger = target.closest('[data-open-project]'); // Elemento que declara el id del proyecto
-        if (!trigger) return; // Si no hay trigger, no hacemos nada
+    // Solo responde si el trigger pertenece a la sección de este lightbox
+    if (trigger.closest(`[data-lightbox-scope="${instanceId}"]`) === null) return;
 
-        const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches; // Detecta desktop con hover real
-        const isButton = trigger.tagName === 'BUTTON'; // Identifica si el trigger es el botón "View Project"
+    const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const isButton = trigger.tagName === 'BUTTON';
+    if (hasHover && !isButton) return;
 
-        // Si hay hover real, solo el botón abre
-        if (hasHover && !isButton) return; // Evita abrir al clickear la card completa en desktop
-
-        const id = trigger.getAttribute('data-open-project'); // Lee el id del proyecto
-        const index = projects.findIndex((p: any) => p.id === id); // Busca el índice por id
-
-        if (index !== -1) { // Valida índice encontrado
-            openLightboxByIndex(index); // Abre el lightbox con ese proyecto
-        }
-    });
-
-    closeBtn.addEventListener('click', closeLightbox); // Cierra al clickear el botón X
-
-    lightbox.addEventListener('click', e => { // Cierra al clickear fuera del panel
-        if (e.target === lightbox) closeLightbox(); // Solo si se clickea el overlay
-    });
-
-    nextBtn?.addEventListener('click', e => { // Click en siguiente
-        e.stopPropagation(); // Evita que el click burbujee al overlay
-        showNext(); // Navega al siguiente
-    });
-
-    prevBtn?.addEventListener('click', e => { // Click en anterior
-        e.stopPropagation(); // Evita que el click burbujee al overlay
-        showPrev(); // Navega al anterior
-    });
-
-    document.addEventListener('keydown', e => { // Controles por teclado cuando el lightbox está abierto
-        if (lightbox.classList.contains('opacity-0')) return; // Si está cerrado, ignorar teclas
-
-        if (e.key === 'Escape') closeLightbox(); // Escape cierra
-        if (e.key === 'ArrowRight') showNext(); // Flecha derecha avanza
-        if (e.key === 'ArrowLeft') showPrev(); // Flecha izquierda retrocede
-    });
-});
-
-// Tag list horizontal scroll
-document.addEventListener('DOMContentLoaded', () => { // Activa scroll horizontal con rueda en las listas de tags
-  const tagLists = document.querySelectorAll<HTMLElement>('.project-card-tags'); // Contenedores con overflow horizontal
-
-  tagLists.forEach(list => { // Aplica a cada lista encontrada
-    list.addEventListener(
-      'wheel',
-      e => {
-        // Si no hay overflow horizontal, no hacemos nada
-        if (list.scrollWidth <= list.clientWidth) return; // Evita bloquear el scroll normal
-
-        e.preventDefault(); // Bloquea el scroll vertical del documento
-
-        // Convierte scroll vertical en horizontal
-        list.scrollLeft += e.deltaY; // Mueve la lista horizontalmente
-      },
-      { passive: false } // Requerido para poder usar preventDefault
-    );
+    const id = trigger.getAttribute('data-open-project');
+    const index = projects.findIndex((p: any) => p.id === id);
+    if (index !== -1) openLightboxByIndex(index);
   });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', e => {
+    if (e.target === lightbox) closeLightbox();
+  });
+
+  nextBtn?.addEventListener('click', e => { e.stopPropagation(); showNext(); });
+  prevBtn?.addEventListener('click', e => { e.stopPropagation(); showPrev(); });
+
+  document.addEventListener('keydown', e => {
+    if (lightbox.classList.contains('opacity-0')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowRight') showNext();
+    if (e.key === 'ArrowLeft') showPrev();
+  });
+}
+
+// Tag scroll horizontal
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll<HTMLElement>('.project-card-tags').forEach(list => {
+    list.addEventListener('wheel', e => {
+      if (list.scrollWidth <= list.clientWidth) return;
+      e.preventDefault();
+      list.scrollLeft += e.deltaY;
+    }, { passive: false });
+  });
+
+  // Inicializa todas las instancias de lightbox presentes en la página
+  const data = (window as any).__LIGHTBOX_DATA__;
+  if (data) {
+    Object.keys(data).forEach(id => initLightbox(id));
+  }
 });

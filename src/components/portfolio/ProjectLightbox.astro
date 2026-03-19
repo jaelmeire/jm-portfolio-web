@@ -1,13 +1,13 @@
 ---
-import type { Project } from '../../data/projectsData'; // Tipo Project
+import type { Project } from '../../data/projectsData';
 
 interface Props {
-  projects: Project[]; // Lista de proyectos
+  projects: Project[];
+  instanceId: string;
 }
 
-const { projects } = Astro.props as Props; // Props tipadas
+const { projects, instanceId } = Astro.props;
 
-// Normalizar proyectos para uso seguro en JS
 const safeProjects = projects.map(project => ({
   id: project.id,
   title: project.title,
@@ -15,27 +15,22 @@ const safeProjects = projects.map(project => ({
   description: project.description ?? '',
   longDescription: project.longDescription ?? '',
   liveUrl: project.liveUrl ?? null,
-  gallery: project.gallery?.map(
-    (img: { src: string }) => img.src
-  ) ?? [],
-  tags: project.tags?.map(
-    (tag: { label: string; icon: { src: string } }) => ({
-      label: tag.label,
-      icon: tag.icon.src,
-    })
-  ) ?? [],
+  githubUrl: (project as any).githubUrl ?? null,
+  gallery: project.gallery?.map((img: { src: string }) => img.src) ?? [],
+  tags: project.tags?.map((tag: { label: string; icon: { src: string } }) => ({
+    label: tag.label,
+    icon: tag.icon.src,
+  })) ?? [],
 }));
 ---
 
-<!-- Project lightbox overlay -->
 <div
-  id="project-lightbox"
+  id={instanceId}
   class="fixed inset-0 z-50 bg-black/80 backdrop-blur
     opacity-0 pointer-events-none transition duration-300
-    flex items-center justify-center">
-
+    flex items-center justify-center"
+>
   <div class="p-6 w-5xl">
-    <!-- Lightbox container -->
     <div
       class="relative max-w-5xl mx-auto my-12 bg-[#0b0f17]
         rounded-2xl border border-white/10
@@ -43,65 +38,25 @@ const safeProjects = projects.map(project => ({
         scale-95 opacity-0 transition duration-300"
       data-lightbox-content
     >
-
       <!-- Header -->
-      <div
-        class="flex items-center justify-between
-          px-6 py-4 border-b border-white/10 shrink-0"
-      >
-        <!-- Navigation arrows -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
         <div class="flex items-center gap-4">
-          <button
-            data-lightbox-prev
-            class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20
-              flex items-center justify-center transition cursor-pointer"
-            aria-label="Previous project"
-          >
-            ←
-          </button>
-
-          <button
-            data-lightbox-next
-            class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20
-              flex items-center justify-center transition cursor-pointer"
-            aria-label="Next project"
-          >
-            →
-          </button>
+          <button data-lightbox-prev class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer" aria-label="Previous project">←</button>
+          <button data-lightbox-next class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer" aria-label="Next project">→</button>
         </div>
-
-        <!-- Close button -->
-        <button
-          data-close-lightbox
-          class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20
-            flex items-center justify-center transition cursor-pointer"
-          aria-label="Close project"
-        >
-          ✕
-        </button>
+        <button data-close-lightbox class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer" aria-label="Close project">✕</button>
       </div>
 
-      <!-- Lightbox content -->
+      <!-- Content -->
       <div class="grid md:grid-cols-2 h-[80vh] grid-rows-[1fr_1fr] md:grid-rows-1">
-        <!-- Gallery -->
-        <div
-          class="overflow-y-auto custom-scroll overscroll-contain
-            border-r border-white/5 px-6 py-6 space-y-6"
-          data-lightbox-gallery
-        ></div>
-
-        <!-- Project info -->
-        <div
-          class="p-8 overflow-y-auto custom-scroll overscroll-contain"
-          data-lightbox-info
-        ></div>
+        <div class="overflow-y-auto custom-scroll overscroll-contain border-r border-white/5 px-6 py-6 space-y-6" data-lightbox-gallery></div>
+        <div class="p-8 overflow-y-auto custom-scroll overscroll-contain" data-lightbox-info></div>
       </div>
-
     </div>
   </div>
 </div>
 
-<!-- Expose projects to frontend lightbox script -->
-<script define:vars={{ safeProjects }}>
-  window.__PROJECTS__ = safeProjects;
+<script define:vars={{ safeProjects, instanceId }}>
+  window.__LIGHTBOX_DATA__ = window.__LIGHTBOX_DATA__ || {};
+  window.__LIGHTBOX_DATA__[instanceId] = safeProjects;
 </script>

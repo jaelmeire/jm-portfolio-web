@@ -12,7 +12,7 @@ import TagList from '../components/portfolio/TagList.astro'; // Lista de tags
 	<h2 class="text-3xl font-bold mb-12 text-white text-center">Professional Journey</h2>
 
 	<!-- Grid de tarjetas -->
-	<div class="grid md:grid-cols-2 gap-6">
+	<div class="grid md:grid-cols-2 gap-6 items-stretch">
 
 		<!-- Card WordPress -->
 		<div class="group relative bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col hover:bg-white/10 transition transform hover:-translate-y-1 hover:shadow-lg">
@@ -29,7 +29,7 @@ import TagList from '../components/portfolio/TagList.astro'; // Lista de tags
 			<p class="text-gray-400 text-center">Websites & Online Stores</p>
 
 			<!-- Fecha -->
-			<p class="text-sm text-gray-500 mt-1 text-center">2024 — Present</p>
+			<p class="text-sm text-gray-500 mt-1 text-center">2022 — Present</p>
 
 			<!-- Descripción -->
 			<p class="text-gray-300 mt-4 leading-relaxed text-center">
@@ -58,7 +58,7 @@ import TagList from '../components/portfolio/TagList.astro'; // Lista de tags
 			<p class="text-gray-400 text-center">Fast Static Websites</p>
 
 			<!-- Fecha -->
-			<p class="text-sm text-gray-500 mt-1 text-center">2024 — Present</p>
+			<p class="text-sm text-gray-500 mt-1 text-center">2022 — Present</p>
 
 			<!-- Descripción -->
 			<p class="text-gray-300 mt-4 leading-relaxed text-center">
@@ -70,6 +70,31 @@ import TagList from '../components/portfolio/TagList.astro'; // Lista de tags
 			<div class="mt-6 flex justify-center">
 				<TagList tags={['astro', 'tailwind', 'typescript']} align="center"/>
 			</div>
+		</div>
+
+		<!-- Card IT Support -->
+		<div class="group relative bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col hover:bg-white/10 transition transform hover:-translate-y-1 hover:shadow-lg md:col-span-2 md:w-1/2 md:mx-auto">
+
+			<!-- Icono -->
+			<div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-md transition group-hover:scale-110">
+				IT
+			</div>
+
+			<!-- Rol -->
+			<h3 class="text-xl font-semibold text-white mt-6 text-center">IT Support Technician</h3>
+
+			<!-- Subtítulo -->
+			<p class="text-gray-400 text-center">Hardware & Software Support</p>
+
+			<!-- Fecha -->
+			<p class="text-sm text-gray-500 mt-1 text-center">2020 — Present</p>
+
+			<!-- Descripción -->
+			<p class="text-gray-300 mt-4 leading-relaxed text-center">
+				PC and mobile device repair and maintenance. Formatting, OS installation,
+				component replacement, PC assembly, malware removal and data recovery.
+			</p>
+
 		</div>
 
 	</div>

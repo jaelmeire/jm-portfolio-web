@@ -19,6 +19,7 @@ import flaticon from '../assets/flaticon.svg?url'; // Flaticon
 import coolors from '../assets/coolors.svg?url'; // Coolors
 import dafontFree from '../assets/dafont-free.svg?url'; // Dafont Free
 import googleFonts from '../assets/google-fonts.svg?url'; // Google Fonts
+import php from '../assets/php.svg?url'; // PHP
 
 // Toolkit centralizado con labels e iconos
 export const TOOLKIT = {
@@ -41,6 +42,7 @@ export const TOOLKIT = {
     coolors: { label: 'Coolors', icon: coolors },
     dafontFree: { label: 'Dafont Free', icon: dafontFree },
     googleFonts: { label: 'Google Fonts', icon: googleFonts },
+    php: { label: 'PHP', icon: php },
 } as const;
 
 // Tipo dinámico basado en las keys del toolkit
