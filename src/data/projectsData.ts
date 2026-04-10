@@ -102,7 +102,7 @@ export const allProjectsData: Project[] = [
       { icon: tailwind, label: 'Tailwind CSS' },
       { icon: typescript, label: 'TypeScript' },
     ],
-    liveUrl: 'https://jm-cv.vercel.app/',
+    liveUrl: 'https://jaelmeire.vercel.app/',
     githubUrl: 'https://github.com/jaelmeire/jm-cv',
   },
 
